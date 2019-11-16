@@ -1,40 +1,17 @@
 var express = require('express')
 var router = express.Router()
-const _ = require('lodash')
-const {spawn} = require('child_process')
+var _isString = require('lodash/isString')
 
-let pageKite = spawn('python2', 'pagekite.py 3000 engrjabi.pagekite.me'.split(' '))
+router.get('/', function (req, res) {
+  const text = req.query.text
 
-console.log('Class: , Function: , Line__8 {pageKite}(): '
-, {pageKite});
-
-/* GET home page. */
-router.get('/', function (req, res, next) {
-  let text = req.query.text
-
-  if (_.isString(text)) {
-    // Check for custom command before running alias
-    const aliasName = _.camelCase(text.trim())
-    console.log('Class: , Function: , Line__12 {aliasName}(): '
-      , {aliasName})
-
-    pageKite.kill()
-    pageKite = spawn('python2', 'pagekite.py 3000 engrjabi.pagekite.me'.split(' '))
-
-    const child = spawn(process.env.SHELL, `-i -c ${aliasName}`.split(' '), {
-      detached: true,
-      stdio: ['ignore', 'ignore', 'ignore']
+  if (_isString(text)) {
+    global.wss.clients.forEach((client) => {
+      client.send(text)
     })
-    child.unref()
   }
 
-
-  console.log('Class: , Function: , Line__7 (): ')
-  console.log(require('util').inspect({
-    text
-  }, false, null, true /* enable colors */))
-
-  res.send('Hello')
+  res.send("hi")
 })
 
 module.exports = router
