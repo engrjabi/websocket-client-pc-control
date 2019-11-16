@@ -1,6 +1,10 @@
 const WebSocket = require('ws');
 
-const ws = new WebSocket('ws://localhost:3000/');
+const ws = new WebSocket('ws://localhost:3000/', [], {
+  headers: {
+    token: 'FFDDSSSS',
+  }
+});
 
 ws.on('open', function open() {
   console.log('Connected!')

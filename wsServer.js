@@ -1,7 +1,7 @@
 var {Server} = require('ws')
 
-const createWsServer = (server) => {
-  const wss = new Server({server})
+const createWsServer = () => {
+  const wss = new Server({noServer: true})
 
   wss.on('connection', (ws) => {
     console.log('Client connected')

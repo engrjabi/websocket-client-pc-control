@@ -34,7 +34,17 @@ server.on('listening', onListening)
  * Create websocket server.
  */
 
-createWsServer(server)
+const wss = createWsServer()
+
+server.on('upgrade', (req, socket, head) => {
+  if (req && req.headers && req.headers.token === 'FFDDSSSS') {
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      wss.emit('connection', ws, req)
+    })
+  } else {
+    socket.destroy()
+  }
+})
 
 /**
  * Normalize a port into a number, string, or false.
