@@ -8,6 +8,7 @@ var app = require('../app')
 var createWsServer = require('../wsServer')
 var debug = require('debug')('google-voice-test2:server')
 var http = require('http')
+require('dotenv').config()
 
 /**
  * Get port from environment and store in Express.
@@ -37,7 +38,7 @@ server.on('listening', onListening)
 const wss = createWsServer()
 
 server.on('upgrade', (req, socket, head) => {
-  if (req && req.headers && req.headers.token === 'FFDDSSSS') {
+  if (req && req.headers && req.headers.token === process.env.SHARED_KEY) {
     wss.handleUpgrade(req, socket, head, (ws) => {
       wss.emit('connection', ws, req)
     })
