@@ -1,10 +1,20 @@
-const WebSocket = require('ws')
 require('dotenv').config()
+
+const WebSocket = require('ws')
 const {spawn} = require('child_process')
 const _isString = require('lodash/isString')
 const _camelCase = require('lodash/camelCase')
+const low = require('lowdb')
+const FileSync = require('lowdb/adapters/FileSync')
+const kill = require('tree-kill')
 
 const aliasThatNeedsDelayedRestart = ['codeRed', 'codeBlue']
+
+const adapter = new FileSync('db.json')
+const db = low(adapter)
+
+// Set some defaults (required if your JSON file is empty)
+db.defaults({processes: {}}).write()
 
 const startWsClient = () => {
   let shouldReconnectOnClose = true
@@ -26,6 +36,17 @@ const startWsClient = () => {
       return
     }
 
+    if (text.includes('terminate')) {
+      const aliasName = _camelCase(text.replace('terminate', '').trim())
+      const existingProcess = db.get(`processes.${aliasName}`)
+        .value()
+
+      if (existingProcess && existingProcess.pid) {
+        kill(existingProcess.pid)
+        return
+      }
+    }
+
     const aliasName = _camelCase(text.trim())
     console.log('Invoke Command:', aliasName)
 
@@ -33,17 +54,15 @@ const startWsClient = () => {
       detached: true,
       stdio: ['ignore', 'ignore', 'ignore']
     })
-
     child.unref()
+
+    db.set(`processes.${aliasName}`, child)
+      .write()
 
     if (aliasThatNeedsDelayedRestart.includes(aliasName)) {
       shouldReconnectOnClose = false
-
       setTimeout(() => {
-        console.log('Class: incoming, Function: , Line__39 {ws}(): '
-          , {ws: ws.readyState})
         ws.terminate()
-        // ws.close()
         startWsClient()
       }, 10000)
     }

@@ -15,7 +15,9 @@
     "http-errors": "~1.6.3",
     "jade": "~1.11.0",
     "lodash": "^4.17.15",
+    "lowdb": "^1.0.0",
     "morgan": "~1.9.1",
+    "tree-kill": "^1.2.1",
     "utf-8-validate": "^5.0.2",
     "ws": "^7.2.0"
   }
