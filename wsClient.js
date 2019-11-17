@@ -20,11 +20,12 @@ const startWsClient = () => {
   ws.on('message', function incoming(text) {
     console.log('Message Received:', text)
 
-    if (_isString(text)) {
+    if (!_isString(text)) {
       return
     }
 
     const aliasName = _camelCase(text.trim())
+    console.log('Invoke Command:', aliasName)
 
     const child = spawn(process.env.SHELL, `-i -c ${aliasName}`.split(' '), {
       detached: true,
@@ -34,9 +35,17 @@ const startWsClient = () => {
     child.unref()
 
     if (aliasThatNeedsDelayedRestart.includes(aliasName)) {
-      ws.close()
-      setTimeout(() => startWsClient(), 2000)
+      setTimeout(() => {
+        console.log('Class: incoming, Function: , Line__39 {ws}(): '
+        , {ws});
+        ws.close()
+        // startWsClient()
+      }, 5000)
     }
+  })
+
+  ws.on('close', () => {
+    startWsClient()
   })
 }
 
