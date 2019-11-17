@@ -7,6 +7,8 @@ const _camelCase = require('lodash/camelCase')
 const aliasThatNeedsDelayedRestart = ['codeRed', 'codeBlue']
 
 const startWsClient = () => {
+  let shouldReconnectOnClose = true
+
   const ws = new WebSocket('wss://aqueous-headland-89485.herokuapp.com/', [], {
     headers: {
       token: process.env.SHARED_KEY
@@ -35,17 +37,22 @@ const startWsClient = () => {
     child.unref()
 
     if (aliasThatNeedsDelayedRestart.includes(aliasName)) {
+      shouldReconnectOnClose = false
+
       setTimeout(() => {
         console.log('Class: incoming, Function: , Line__39 {ws}(): '
-        , {ws});
-        ws.close()
-        // startWsClient()
-      }, 5000)
+          , {ws: ws.readyState})
+        ws.terminate()
+        // ws.close()
+        startWsClient()
+      }, 10000)
     }
   })
 
   ws.on('close', () => {
-    startWsClient()
+    if (shouldReconnectOnClose) {
+      startWsClient()
+    }
   })
 }
 
