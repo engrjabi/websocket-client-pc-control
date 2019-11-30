@@ -1,78 +1,106 @@
-require('dotenv').config()
+require("dotenv").config();
 
-const WebSocket = require('ws')
-const {spawn} = require('child_process')
-const _isString = require('lodash/isString')
-const _camelCase = require('lodash/camelCase')
-const low = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
-const kill = require('tree-kill')
+const WebSocket = require("ws");
+const { spawn } = require("child_process");
+const _isString = require("lodash/isString");
+const _camelCase = require("lodash/camelCase");
+const low = require("lowdb");
+const FileSync = require("lowdb/adapters/FileSync");
+const kill = require("tree-kill");
 
-const aliasThatNeedsDelayedRestart = ['codeRed', 'codeBlue']
-
-const adapter = new FileSync('db.json')
-const db = low(adapter)
+const adapter = new FileSync("db.json");
+const db = low(adapter);
 
 // Set some defaults (required if your JSON file is empty)
-db.defaults({processes: {}}).write()
+db.defaults({ processes: {} }).write();
 
 const startWsClient = () => {
-  let shouldReconnectOnClose = true
+  let shouldReconnectOnClose = true;
+  let pingTimeout = null;
+  let instantiateTimeout = null;
 
   const ws = new WebSocket('wss://aqueous-headland-89485.herokuapp.com/', [], {
     headers: {
       token: process.env.SHARED_KEY
     }
-  })
+  });
 
-  ws.on('open', function open() {
-    console.log('Connected!')
-  })
+  console.log("INSTANTIATE WS", ws.readyState);
 
-  ws.on('message', function incoming(text) {
-    console.log('Message Received:', text)
+  instantiateTimeout = setTimeout(() => {
+    console.log("Terminating due to instantiate failure");
+    ws.terminate();
+    if (shouldReconnectOnClose) {
+      shouldReconnectOnClose = false;
+      startWsClient();
+    }
+  }, 10000);
+
+  function heartbeat() {
+    console.log("Heartbeat");
+    clearTimeout(instantiateTimeout);
+    clearTimeout(pingTimeout);
+
+    // Use `WebSocket#terminate()`, which immediately destroys the connection,
+    // instead of `WebSocket#close()`, which waits for the close timer.
+    // Delay should be equal to the interval at which your server
+    // sends out pings plus a conservative assumption of the latency.
+    pingTimeout = setTimeout(() => {
+      console.log("Terminating due to Heartbeat failure");
+      ws.terminate();
+      if (shouldReconnectOnClose) {
+        shouldReconnectOnClose = false;
+        startWsClient();
+      }
+    }, 3000 + 1000);
+  }
+
+  ws.on("open", heartbeat);
+  ws.on("ping", heartbeat);
+
+  ws.on("message", function incoming(text) {
+    console.log("Message Received:", text);
 
     if (!_isString(text)) {
-      return
+      return;
     }
 
-    if (text.includes('terminate')) {
-      const aliasName = _camelCase(text.replace('terminate', '').trim())
-      const existingProcess = db.get(`processes.${aliasName}`)
-        .value()
+    if (text.includes("terminate")) {
+      const aliasName = _camelCase(text.replace("terminate", "").trim());
+      const existingProcess = db.get(`processes.${aliasName}`).value();
 
       if (existingProcess && existingProcess.pid) {
-        kill(existingProcess.pid)
-        return
+        kill(existingProcess.pid);
+        return;
       }
     }
 
-    const aliasName = _camelCase(text.trim())
-    console.log('Invoke Command:', aliasName)
+    const aliasName = _camelCase(text.trim());
+    console.log("Invoke Command:", aliasName);
 
-    const child = spawn(process.env.SHELL, `-i -c ${aliasName}`.split(' '), {
+    const child = spawn(process.env.SHELL, `-i -c ${aliasName}`.split(" "), {
       detached: true,
-      stdio: ['ignore', 'ignore', 'ignore']
-    })
-    child.unref()
+      stdio: ["ignore", "ignore", "ignore"]
+    });
+    child.unref();
 
-    db.set(`processes.${aliasName}`, child)
-      .write()
+    db.set(`processes.${aliasName}`, child).write();
+  });
 
-    if (aliasThatNeedsDelayedRestart.includes(aliasName)) {
-      shouldReconnectOnClose = false
-      setTimeout(() => {
-        ws.terminate()
-        startWsClient()
-      }, 10000)
-    }
-  })
-
-  ws.on('close', () => {
+  ws.on("close", () => {
+    clearTimeout(pingTimeout);
+    clearTimeout(instantiateTimeout);
+    ws.terminate();
     if (shouldReconnectOnClose) {
-      startWsClient()
+      shouldReconnectOnClose = false;
+      startWsClient();
     }
-  })
-}
+  });
 
-startWsClient()
+  ws.on("error", e => {
+    console.log("WS ERROR", e);
+    ws.terminate();
+  });
+};
+
+startWsClient();
