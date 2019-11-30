@@ -1,15 +1,32 @@
-var {Server} = require('ws')
+var { Server } = require("ws");
 
-const createWsServer = () => {
-  const wss = new Server({noServer: true})
+function noop() {}
 
-  wss.on('connection', (ws) => {
-    console.log('Client connected')
-    ws.on('close', () => console.log('Client disconnected'))
-  })
-
-  global.wss = wss
-  return wss
+function heartbeat() {
+  this.isAlive = true;
 }
 
-module.exports = createWsServer
+const createWsServer = () => {
+  const wss = new Server({ noServer: true });
+
+  wss.on("connection", ws => {
+    console.log("Client connected");
+    ws.isAlive = true;
+    ws.on("pong", heartbeat);
+    ws.on("close", () => console.log("Client disconnected"));
+  });
+
+  setInterval(function ping() {
+    wss.clients.forEach(function each(ws) {
+      if (ws.isAlive === false) return ws.terminate();
+
+      ws.isAlive = false;
+      ws.ping(noop);
+    });
+  }, 3000);
+
+  global.wss = wss;
+  return wss;
+};
+
+module.exports = createWsServer;
