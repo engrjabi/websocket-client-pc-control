@@ -19,7 +19,7 @@ const startWsClient = () => {
   let pingTimeout = null;
   let instantiateTimeout = null;
 
-  const ws = new WebSocket("wss://aqueous-headland-89485.herokuapp.com/", [], {
+  const ws = new WebSocket( process.env.WS_SERVER_URL, [], {
     headers: {
       token: process.env.SHARED_KEY
     }
