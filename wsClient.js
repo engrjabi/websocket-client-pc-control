@@ -1,9 +1,8 @@
 require("dotenv").config();
 
 const WebSocket = require("ws");
-const { spawn } = require("child_process");
+const openKillAppIntent = require("./wsClientIntents/openKillAppIntent");
 const _isString = require("lodash/isString");
-const _camelCase = require("lodash/camelCase");
 const low = require("lowdb");
 const FileSync = require("lowdb/adapters/FileSync");
 const kill = require("tree-kill");
@@ -19,7 +18,7 @@ const startWsClient = () => {
   let pingTimeout = null;
   let instantiateTimeout = null;
 
-  const ws = new WebSocket( process.env.WS_SERVER_URL, [], {
+  const ws = new WebSocket(process.env.WS_SERVER_URL, [], {
     headers: {
       token: process.env.SHARED_KEY
     }
@@ -52,7 +51,7 @@ const startWsClient = () => {
         shouldReconnectOnClose = false;
         startWsClient();
       }
-    }, 3000 + 1000);
+    }, 120000 + 1000);
   }
 
   ws.on("open", heartbeat);
@@ -65,26 +64,7 @@ const startWsClient = () => {
       return;
     }
 
-    if (text.includes("terminate")) {
-      const aliasName = _camelCase(text.replace("terminate", "").trim());
-      const existingProcess = db.get(`processes.${aliasName}`).value();
-
-      if (existingProcess && existingProcess.pid) {
-        kill(existingProcess.pid);
-        return;
-      }
-    }
-
-    const aliasName = _camelCase(text.trim());
-    console.log("Invoke Command:", aliasName);
-
-    const child = spawn(process.env.SHELL, `-i -c ${aliasName}`.split(" "), {
-      detached: true,
-      stdio: ["ignore", "ignore", "ignore"]
-    });
-    child.unref();
-
-    db.set(`processes.${aliasName}`, child).write();
+    openKillAppIntent(text, db);
   });
 
   ws.on("close", () => {
