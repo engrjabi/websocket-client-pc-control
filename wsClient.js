@@ -1,11 +1,13 @@
 require("dotenv").config();
 
 const WebSocket = require("ws");
-const openKillAppIntent = require("./wsClientIntents/openKillAppIntent");
 const _isString = require("lodash/isString");
 const low = require("lowdb");
 const FileSync = require("lowdb/adapters/FileSync");
-const kill = require("tree-kill");
+
+const openKillAppIntent = require("./wsClientIntents/openKillAppIntent");
+const screenShotIntent = require("./wsClientIntents/screenShotIntent");
+const powerControlsIntent = require("./wsClientIntents/powerControlsIntent");
 
 const adapter = new FileSync("db.json");
 const db = low(adapter);
@@ -65,6 +67,8 @@ const startWsClient = () => {
     }
 
     openKillAppIntent(text, db);
+    screenShotIntent(text, db);
+    powerControlsIntent(text, db);
   });
 
   ws.on("close", () => {
