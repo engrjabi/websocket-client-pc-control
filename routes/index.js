@@ -3,13 +3,9 @@ var router = express.Router();
 var _isString = require("lodash/isString");
 
 router.get("/", function(req, res) {
-  const text = req.query.text;
-
-  if (_isString(text)) {
-    global.wss.clients.forEach(client => {
-      client.send(text);
-    });
-  }
+  global.wss.clients.forEach(client => {
+    client.send(JSON.stringify(req.query));
+  });
 
   res.send("hi");
 });
