@@ -23,7 +23,7 @@ const createWsServer = () => {
       ws.isAlive = false;
       ws.ping(noop);
     });
-  }, 120000);
+  }, 60000);
 
   global.wss = wss;
   return wss;

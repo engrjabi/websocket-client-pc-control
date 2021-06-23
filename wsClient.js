@@ -54,7 +54,7 @@ const startWsClient = () => {
         shouldReconnectOnClose = false;
         startWsClient();
       }
-    }, 120000 + 1000);
+    }, 60000 + 1000);
   }
 
   ws.on("open", heartbeat);
