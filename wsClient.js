@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const WebSocket = require("ws");
 const _isString = require("lodash/isString");
+const isEmpty = require("lodash/isEmpty");
 const low = require("lowdb");
 const FileSync = require("lowdb/adapters/FileSync");
 
@@ -60,15 +61,27 @@ const startWsClient = () => {
   ws.on("ping", heartbeat);
 
   ws.on("message", function incoming(text) {
+    let messageInput = null;
     console.log("Message Received:", text);
 
     if (!_isString(text)) {
       return;
     }
 
-    openKillAppIntent(text, db);
-    screenShotIntent(text, db);
-    powerControlsIntent(text, db);
+    try {
+      messageInput = JSON.parse(text);
+    } catch (e) {
+      console.log(e);
+      messageInput = null;
+    }
+
+    if (isEmpty(messageInput)) {
+      return;
+    }
+
+    openKillAppIntent(messageInput, db);
+    screenShotIntent(messageInput, db);
+    powerControlsIntent(messageInput, db);
   });
 
   ws.on("close", () => {

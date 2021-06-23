@@ -1,36 +1,28 @@
 require("dotenv").config();
 
-const { spawn } = require("child_process");
 const _camelCase = require("lodash/camelCase");
+const get = require("lodash/get");
 const wsClientIntentList = require("./wsClientIntentList");
+const launchShellCommand = require("../helpers/launchShellCommand");
 const kill = require("tree-kill");
 
-module.exports = (text, db) => {
-  if (text.includes(wsClientIntentList.TERMINATE)) {
-    const aliasName = _camelCase(
-      text.replace(wsClientIntentList.TERMINATE, "").trim()
-    );
+module.exports = (messageInput, db) => {
+  if (messageInput.intentName === wsClientIntentList.ComputerCommandCloseApp) {
+    const aliasName = get(messageInput, "appName.value", "").trim();
     const existingProcess = db.get(`processes.${aliasName}`).value();
 
     if (existingProcess && existingProcess.pid) {
       kill(existingProcess.pid);
+      db.set(`processes.${aliasName}`, {}).write();
       return;
     }
   }
 
-  if (text.includes(wsClientIntentList.OPEN)) {
-    const aliasName = _camelCase(
-      text.replace(wsClientIntentList.OPEN, "").trim()
-    );
+  if (messageInput.intentName === wsClientIntentList.ComputerCommandOpenApp) {
+    const aliasName = get(messageInput, "appName.value", "").trim();
 
     console.log("Invoke Command:", aliasName);
-
-    const child = spawn(process.env.SHELL, `-i -c ${aliasName}`.split(" "), {
-      detached: true,
-      stdio: ["ignore", "ignore", "ignore"]
-    });
-    child.unref();
-
+    const child = launchShellCommand(aliasName);
     db.set(`processes.${aliasName}`, child).write();
   }
 };

@@ -1,17 +1,24 @@
 require("dotenv").config();
 
-const { spawn } = require("child_process");
 const wsClientIntentList = require("./wsClientIntentList");
+const launchShellCommand = require("../helpers/launchShellCommand");
 
-module.exports = (text, db) => {
-  if (text.includes(wsClientIntentList.TURN_OFF)) {
+module.exports = (messageInput, db) => {
+  if (messageInput.intentName === wsClientIntentList.ComputerCommandShutdown) {
     const aliasName = "turnOff";
     console.log("Invoke Command:", aliasName);
+    launchShellCommand(aliasName);
+  }
 
-    const child = spawn(process.env.SHELL, `-i -c ${aliasName}`.split(" "), {
-      detached: true,
-      stdio: ["ignore", "ignore", "ignore"]
-    });
-    child.unref();
+  if (messageInput.intentName === wsClientIntentList.ComputerCommandRestart) {
+    const aliasName = "restartSystem";
+    console.log("Invoke Command:", aliasName);
+    launchShellCommand(aliasName);
+  }
+
+  if (messageInput.intentName === wsClientIntentList.ComputerCommandLock) {
+    const aliasName = "lockdown";
+    console.log("Invoke Command:", aliasName);
+    launchShellCommand(aliasName);
   }
 };
