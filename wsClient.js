@@ -80,9 +80,20 @@ const startWsClient = () => {
       return;
     }
 
-    openKillAppIntent(messageInput, db);
-    screenShotIntent(messageInput, db);
-    powerControlsIntent(messageInput, db);
+    const responseHandler = message => {
+      if (messageInput && messageInput.message_id) {
+        ws.send(
+          JSON.stringify({
+            message: message,
+            message_id: messageInput.message_id
+          })
+        );
+      }
+    };
+
+    openKillAppIntent(messageInput, db, responseHandler);
+    screenShotIntent(messageInput, db, responseHandler);
+    powerControlsIntent(messageInput, db, responseHandler);
   });
 
   ws.on("close", () => {
