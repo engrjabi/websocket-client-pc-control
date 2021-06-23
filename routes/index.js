@@ -16,7 +16,7 @@ router.get("/", function(req, res) {
 
     const messageHandler = data => {
       console.log(data);
-      res.status(200).json(data);
+      res.status(200).send(data);
       global.wssWithId[req.query.id].removeListener("message", messageHandler);
     };
 
