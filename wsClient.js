@@ -23,7 +23,8 @@ const startWsClient = () => {
 
   const ws = new WebSocket(process.env.WS_SERVER_URL, [], {
     headers: {
-      token: process.env.SHARED_KEY
+      token: process.env.SHARED_KEY,
+      id: process.env.DEVICE_ID
     }
   });
 
